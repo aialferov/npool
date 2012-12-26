@@ -1,0 +1,5 @@
+tmp
+*.log
+*.swp
+*.beam
+*.tar.gz
