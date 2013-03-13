@@ -11,6 +11,6 @@
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
-	npool_sup:start_link(utils:get_env([module, states])).
+	npool_sup:start_link(utils_app:get_env([module, states])).
 
 stop(_State) -> ok.
