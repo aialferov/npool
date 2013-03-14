@@ -1,1 +1,1 @@
-{deps, [{"../utils", "git://github.com/aialferov/utils"}].
+{deps, [{"../utils", "git://github.com/aialferov/utils"}]}.
