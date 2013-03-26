@@ -5,7 +5,7 @@
 {application, npool, [
 	{id, "npool"},
 	{vsn, "0.0.1"},
-	{description, "The pool of processes"},
+	{description, "Process pool manager"},
 	{modules, [
 		npool,
 		npool_app,
@@ -14,5 +14,5 @@
 		npool_worker_sup
 	]},
 	{registered, []},
-	{applications, [kernel, stdlib, sasl]}
+	{applications, [kernel, stdlib, sasl, utils]}
 ]}.
