@@ -8,24 +8,24 @@
 -module(simple_server).
 -behaviour(gen_server).
 
--export([start_link/2]).
+-export([start_link/3]).
 -export([request1/2, request2/2, bad_request/1]).
 
 -export([init/1, terminate/2, code_change/3]).
 -export([handle_call/3, handle_cast/2, handle_info/2]).
 
-start_link(State, StartNotifyFun) ->
-	gen_server:start_link(?MODULE, [State, StartNotifyFun], []).
+start_link(ID, State, StartNotifyFun) ->
+	gen_server:start_link(?MODULE, [ID, State, StartNotifyFun], []).
 
 request1(ID, Data) -> npool_server:call(?MODULE, ID, {request1, Data}).
 request2(ID, Data) -> npool_server:cast(?MODULE, ID, {request2, Data}).
 bad_request(ID) -> npool_server:call(?MODULE, ID, bad_request).
 
-init([State, StartNotifyFun]) ->
+init([_ID, State, StartNotifyFun]) ->
 	StartNotifyFun(self()),
 	{ok, [State]}.
 
-handle_call(_Request, _From, State) -> {reply, ok, State}.
+handle_call({change_id, _NewID}, _From, State) -> {reply, ok, State}.
 
 handle_cast({call, bad_request, _From}, _State) -> unknown:bad_request();
 

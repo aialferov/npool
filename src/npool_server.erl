@@ -58,8 +58,11 @@ handle_call({change_id, ID, NewID}, _From, State = {WorkerSupPid, Workers}) ->
 	case lists:keyfind(NewID, 1, Workers) of
 		{NewID, _WorkerPid} -> {reply, {error, already_started}, State};
 		false -> case worker_pid(ID, Workers) of
-			{ok, WorkerPid} -> {reply, ok, {WorkerSupPid,
-				lists:keyreplace(ID, 1, Workers, {NewID, WorkerPid})}};
+			{ok, WorkerPid} ->
+				{reply, gen_server:call(WorkerPid, {change_id, NewID}),
+					{WorkerSupPid, lists:keyreplace(
+						ID, 1, Workers, {NewID, WorkerPid})}
+				};
 			Error -> {reply, Error, State}
 		end
 	end;
@@ -115,7 +118,7 @@ start_workers(WorkerSupPid, States) -> {WorkerSupPid, lists:flatten(
 start_worker(_WorkerSupPid, []) -> [];
 start_worker(WorkerSupPid, {ID, State}) ->
 	{ok, WorkerPid} = supervisor:start_child(WorkerSupPid,
-		[State, worker_start_notify_fun(self(), ID)]),
+		[ID, State, worker_start_notify_fun(self(), ID)]),
 	monitor(process, WorkerPid),
 	{ID, WorkerPid}.
 
