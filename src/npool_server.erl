@@ -59,7 +59,7 @@ handle_call({change_id, ID, NewID}, _From, State = {WorkerSupPid, Workers}) ->
 		{NewID, _WorkerPid} -> {reply, {error, already_started}, State};
 		false -> case worker_pid(ID, Workers) of
 			{ok, WorkerPid} ->
-				{reply, gen_server:call(WorkerPid, {change_id, NewID}),
+				{reply, gen_server:cast(WorkerPid, {change_id, NewID}),
 					{WorkerSupPid, lists:keyreplace(
 						ID, 1, Workers, {NewID, WorkerPid})}
 				};
