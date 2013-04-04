@@ -10,7 +10,6 @@
 
 -export([start_link/3]).
 -export([request1/2, request2/2, bad_request/1]).
--export([change_id/2]).
 
 -export([init/1, terminate/2, code_change/3]).
 -export([handle_call/3, handle_cast/2, handle_info/2]).
@@ -22,17 +21,11 @@ request1(ID, Data) -> npool_server:call(?MODULE, ID, {request1, Data}).
 request2(ID, Data) -> npool_server:cast(?MODULE, ID, {request2, Data}).
 bad_request(ID) -> npool_server:call(?MODULE, ID, bad_request).
 
-change_id(ID, NewID) -> npool_server:change_id(?MODULE, ID, NewID).
-
 init([_ID, State, StartNotifyFun]) ->
 	StartNotifyFun(self()),
 	{ok, [State]}.
 
 handle_call(_Request, _From, State) -> {reply, ok, State}.
-
-handle_cast({change_id, NewID}, State) ->
-	io:format("New ID: ~p~n", [NewID]),
-	{noreply, State};
 
 handle_cast({call, bad_request, _From}, _State) -> unknown:bad_request();
 

@@ -11,7 +11,6 @@
 -export([start_link/3]).
 
 -export([add/3, remove/2]).
--export([change_id/3]).
 -export([call/3, cast/3]).
 -export([reply/2]).
 
@@ -28,8 +27,6 @@ start_link(Module, States, SupPid) -> gen_server:start_link(
 
 add(Name, ID, State) -> gen_server:call(Name, {add, ID, State}).
 remove(Name, ID) -> gen_server:call(Name, {remove, ID}).
-
-change_id(Name, ID, NewID) -> gen_server:call(Name, {change_id, ID, NewID}).
 
 call(Name, ID, Request) -> gen_server:call(Name, {call, ID, Request}).
 cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).
@@ -52,19 +49,6 @@ handle_call({remove, ID}, _From, State = {WorkerSupPid, Workers}) ->
 			{reply, supervisor:terminate_child(WorkerSupPid, WorkerPid),
 				{WorkerSupPid, lists:keydelete(ID, 1, Workers)}};
 		Error -> {reply, Error, State}
-	end;
-
-handle_call({change_id, ID, NewID}, _From, State = {WorkerSupPid, Workers}) ->
-	case lists:keyfind(NewID, 1, Workers) of
-		{NewID, _WorkerPid} -> {reply, {error, already_started}, State};
-		false -> case worker_pid(ID, Workers) of
-			{ok, WorkerPid} ->
-				{reply, gen_server:cast(WorkerPid, {change_id, NewID}),
-					{WorkerSupPid, lists:keyreplace(
-						ID, 1, Workers, {NewID, WorkerPid})}
-				};
-			Error -> {reply, Error, State}
-		end
 	end;
 
 handle_call({call, ID, Request}, From, State = {_WorkerSupPid, Workers}) ->
