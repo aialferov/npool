@@ -8,7 +8,7 @@
 -module(npool_server).
 -behaviour(gen_server).
 
--export([start_link/3]).
+-export([start_link/2]).
 
 -export([add/3, remove/2]).
 -export([call/3, cast/3]).
@@ -22,8 +22,8 @@
 	permanent, infinity, supervisor, [npool_worker_sup]
 }).
 
-start_link(Module, States, SupPid) -> gen_server:start_link(
-	{local, Module}, ?MODULE, [Module, States, SupPid], []).
+start_link(Module, SupPid) -> gen_server:start_link({local, Module},
+	?MODULE, [Module] ++ utils_app:get_env([states]) ++ [SupPid], []).
 
 add(Name, ID, State) -> gen_server:call(Name, {add, ID, State}).
 remove(Name, ID) -> gen_server:call(Name, {remove, ID}).
@@ -33,7 +33,8 @@ cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).
 
 reply(Client, Reply) -> gen_server:reply(Client, Reply).
 
-init([Module, States, SupPid]) ->
+init([Module, SupPid]) -> init([Module, {states, []}, SupPid]);
+init([Module, {states, States}, SupPid]) ->
 	{gen_server:cast(Module, {start_workers, Module, States, SupPid}), []}.
 
 handle_call({add, ID, WorkerState}, _From, State = {WorkerSupPid, Workers}) ->
@@ -76,9 +77,10 @@ handle_cast({worker_started, ID, WorkerPid}, {WorkerSupPid, Workers}) ->
 			{WorkerSupPid, [{ID, WorkerPid}|Workers]}
 	end}.
 
-handle_info({'DOWN', _MonitorRef, process,
-	WorkerPid, _Info}, {WorkerSupPid, Workers})
-->
+handle_info(
+	{'DOWN', _MonitorRef, process, WorkerPid, _Info},
+	{WorkerSupPid, Workers}
+) ->
 	{noreply, {WorkerSupPid, lists:keydelete(WorkerPid, 2, Workers)}}.
 
 terminate(_Reason, _State) -> ok.

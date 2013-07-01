@@ -13,6 +13,5 @@
 		npool_server,
 		npool_worker_sup
 	]},
-	{registered, []},
 	{applications, [kernel, stdlib, sasl, utils]}
 ]}.

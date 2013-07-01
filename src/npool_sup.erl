@@ -13,7 +13,7 @@
 
 start_link(Args) -> supervisor:start_link(?MODULE, Args).
 
-init([{module, Module}, {states, States}]) -> {ok, {{one_for_all, 1, 10}, [
-	{npool, {npool_server, start_link, [Module, States, self()]},
+init(Args) -> {ok, {{one_for_all, 1, 10}, [
+	{npool, {npool_server, start_link, Args ++ [self()]},
 	permanent, infinity, worker, [npool_server]}
 ]}}.

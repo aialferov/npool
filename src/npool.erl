@@ -5,5 +5,5 @@
 -module(npool).
 -export([start/0, stop/0]).
 
-start() -> application:start(npool).
-stop() -> application:stop(npool).
+start() -> application:start(?MODULE).
+stop() -> application:stop(?MODULE).
