@@ -22,8 +22,8 @@
 	permanent, infinity, supervisor, [npool_worker_sup]
 }).
 
-start_link(Module, SupPid) -> gen_server:start_link({local, Module},
-	?MODULE, [Module] ++ utils_app:get_env([states]) ++ [SupPid], []).
+start_link({module, Module}, SupPid) -> gen_server:start_link({local, Module},
+	?MODULE, {Module, utils_app:get_env([states]), SupPid}, []).
 
 add(Name, ID, State) -> gen_server:call(Name, {add, ID, State}).
 remove(Name, ID) -> gen_server:call(Name, {remove, ID}).
@@ -33,8 +33,8 @@ cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).
 
 reply(Client, Reply) -> gen_server:reply(Client, Reply).
 
-init([Module, SupPid]) -> init([Module, {states, []}, SupPid]);
-init([Module, {states, States}, SupPid]) ->
+init({Module, [], SupPid}) -> init([Module, {states, []}, SupPid]);
+init({Module, [{states, States}], SupPid}) ->
 	{gen_server:cast(Module, {start_workers, Module, States, SupPid}), []}.
 
 handle_call({add, ID, WorkerState}, _From, State = {WorkerSupPid, Workers}) ->

@@ -6,11 +6,8 @@
 	{id, "npool_usage"},
 	{vsn, "0.0.1"},
 	{description, "NPool usage example"},
-	{modules, [
-		npool_usage,
-		npool_usage_server
-	]},
+	{modules, [npool_usage, npool_usage_server]},
 	{registered, [npool_usage_server]},
-	{applications, [kernel, stdlib, sasl, utils]},
-	{mod, {npool_app, [npool_usage_server]}}
+	{applications, [kernel, stdlib, sasl, npool]},
+	{mod, {npool_app, [{module, npool_usage_server}]}}
 ]}.
