@@ -33,7 +33,7 @@ cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).
 
 reply(Client, Reply) -> gen_server:reply(Client, Reply).
 
-init({Module, [], SupPid}) -> init([Module, {states, []}, SupPid]);
+init({Module, [], SupPid}) -> init({Module, [{states, []}], SupPid});
 init({Module, [{states, States}], SupPid}) ->
 	{gen_server:cast(Module, {start_workers, Module, States, SupPid}), []}.
 
