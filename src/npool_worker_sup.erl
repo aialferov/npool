@@ -15,5 +15,5 @@ start_link(Module) -> supervisor:start_link(?MODULE, [Module]).
 
 init([Module]) -> {ok, {{simple_one_for_one, 1, 10}, [
 	{npool_worker_sup, {Module, start_link, []},
-	permanent, infinity, worker, [Module]}
+	transient, infinity, worker, [Module]}
 ]}}.
