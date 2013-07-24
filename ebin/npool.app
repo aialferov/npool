@@ -11,6 +11,7 @@
 		npool_app,
 		npool_sup,
 		npool_server,
+		npool_workers,
 		npool_worker_sup
 	]},
 	{applications, [kernel, stdlib, sasl, utils]}

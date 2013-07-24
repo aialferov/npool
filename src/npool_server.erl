@@ -38,17 +38,17 @@ init({Module, [{states, States}], SupPid}) ->
 	{gen_server:cast(Module, {start_workers, Module, States, SupPid}), []}.
 
 handle_call({add, ID, WorkerState}, _From, State = {WorkerSupPid, Workers}) ->
-	case lists:keyfind(ID, 1, Workers) of
-		{ID, _WorkerPid} -> {reply, {error, already_started}, State};
-		false -> {reply, ok, {WorkerSupPid,
-			[start_worker(WorkerSupPid, {ID, WorkerState})|Workers]}}
+	case npool_workers:member(ID, Workers) of
+		true -> {reply, {error, already_started}, State};
+		false -> {reply, ok, {WorkerSupPid, npool_workers:insert(
+			start_worker(WorkerSupPid, {ID, WorkerState}), Workers)}}
 	end;
 
 handle_call({remove, ID}, _From, State = {WorkerSupPid, Workers}) ->
 	case worker_pid(ID, Workers) of
 		{ok, WorkerPid} ->
 			{reply, supervisor:terminate_child(WorkerSupPid, WorkerPid),
-				{WorkerSupPid, lists:keydelete(ID, 1, Workers)}};
+				{WorkerSupPid, npool_workers:delete(ID, Workers)}};
 		Error -> {reply, Error, State}
 	end;
 
@@ -70,24 +70,24 @@ handle_cast({start_workers, Module, States, SupPid}, []) ->
 	{noreply, start_workers(start_worker_sup(Module, SupPid), States)};
 
 handle_cast({worker_started, ID, WorkerPid}, {WorkerSupPid, Workers}) ->
-	{noreply, case lists:keyfind(ID, 1, Workers) of
-		{ID, WorkerPid} -> {WorkerSupPid, Workers};
+	{noreply, {WorkerSupPid, case npool_workers:member(ID, Workers) of
+		true -> Workers;
 		false ->
 			monitor(process, WorkerPid),
-			{WorkerSupPid, [{ID, WorkerPid}|Workers]}
-	end}.
+			npool_workers:insert({ID, WorkerPid}, Workers)
+	end}}.
 
 handle_info(
 	{'DOWN', _MonitorRef, process, WorkerPid, _Info},
 	{WorkerSupPid, Workers}
 ) ->
-	{noreply, {WorkerSupPid, lists:keydelete(WorkerPid, 2, Workers)}}.
+	{noreply, {WorkerSupPid, npool_workers:delete(WorkerPid, Workers)}}.
 
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
-worker_pid(ID, Workers) -> worker_pid(lists:keyfind(ID, 1, Workers)).
+worker_pid(ID, Workers) -> worker_pid(npool_workers:lookup(ID, Workers)).
 worker_pid({_ID, WorkerPid}) -> case is_process_alive(WorkerPid) of
 	true -> {ok, WorkerPid}; false -> {error, internal} end;
 worker_pid(false) -> {error, not_found}.
@@ -98,7 +98,7 @@ start_worker_sup(Module, SupPid) ->
 		{error, {already_started, WorkerSupPid}} -> WorkerSupPid
 	end.
 
-start_workers(WorkerSupPid, States) -> {WorkerSupPid, lists:flatten(
+start_workers(WorkerSupPid, States) -> {WorkerSupPid, npool_workers:init(
 	[start_worker(WorkerSupPid, worker_state(State)) || State <- States])}.
 
 start_worker(_WorkerSupPid, []) -> [];
