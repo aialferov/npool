@@ -9,6 +9,7 @@
 
 -export([init/1]).
 
+-export([all/1]).
 -export([member/2, lookup/2]).
 -export([insert/2, delete/2]).
 
@@ -18,6 +19,8 @@ init(Workers) -> init(Workers, ets:new(
 	list_to_atom(erlang:ref_to_list(make_ref())), ?Options)).
 init(Workers, Tid) -> lists:foreach(fun([]) -> ok;
 	(Worker) -> insert(Worker, Tid) end, Workers), Tid.
+
+all(Tid) -> ets:match_object(Tid, {'_', '_'}).
 
 member(Key, Tid) -> ets:member(Tid, Key).
 

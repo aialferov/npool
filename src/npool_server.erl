@@ -10,7 +10,7 @@
 
 -export([start_link/2]).
 
--export([add/3, remove/2]).
+-export([add/3, remove/2, workers/1]).
 -export([call/3, cast/3]).
 -export([reply/2]).
 
@@ -27,6 +27,8 @@ start_link({module, Module}, SupPid) -> gen_server:start_link({local, Module},
 
 add(Name, ID, State) -> gen_server:call(Name, {add, ID, State}).
 remove(Name, ID) -> gen_server:call(Name, {remove, ID}).
+
+workers(Name) -> gen_server:call(Name, workers).
 
 call(Name, ID, Request) -> gen_server:call(Name, {call, ID, Request}).
 cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).
@@ -51,6 +53,9 @@ handle_call({remove, ID}, _From, State = {WorkerSupPid, Workers}) ->
 				{WorkerSupPid, npool_workers:delete(ID, Workers)}};
 		Error -> {reply, Error, State}
 	end;
+
+handle_call(workers, _From, State = {_WorkerSupPid, Workers}) ->
+	{reply, npool_workers:all(Workers), State};
 
 handle_call({call, ID, Request}, From, State = {_WorkerSupPid, Workers}) ->
 	case worker_pid(ID, Workers) of
