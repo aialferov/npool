@@ -28,7 +28,8 @@ start_link({module, Module}, SupPid) -> gen_server:start_link({local, Module},
 add(Name, ID, State) -> gen_server:call(Name, {add, ID, State}).
 remove(Name, ID) -> gen_server:call(Name, {remove, ID}).
 
-workers(Name) -> gen_server:call(Name, workers).
+workers(Name) -> [Worker || Worker = {_ID, Pid}
+	<- gen_server:call(Name, workers), is_pid(Pid)].
 
 call(Name, ID, Request) -> gen_server:call(Name, {call, ID, Request}).
 cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).

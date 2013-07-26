@@ -19,8 +19,7 @@ stop() -> application:stop(?MODULE).
 add(ID, State) -> npool_server:add(?Server, ID, State).
 remove(ID) -> npool_server:remove(?Server, ID).
 
-workers() -> [Worker || Worker = {_ID, Pid}
-	<- npool_server:workers(?Server), is_pid(Pid)].
+workers() -> npool_server:workers(?Server).
 
 call_request(ID, Data) -> npool_server:call(?Server, ID, {call_request, Data}).
 cast_request(ID, Data) -> npool_server:cast(?Server, ID, {cast_request, Data}).
