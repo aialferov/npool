@@ -10,8 +10,10 @@
 
 -export([start_link/2]).
 
--export([add/3, remove/2, workers/1]).
--export([call/3, cast/3]).
+-export([add/3, remove/2]).
+-export([workers/1]).
+
+-export([call/3, call/4, cast/3]).
 -export([reply/2]).
 
 -export([init/1, terminate/2, code_change/3]).
@@ -32,6 +34,9 @@ workers(Name) -> [Worker || Worker = {_ID, Pid}
 	<- gen_server:call(Name, workers), is_pid(Pid)].
 
 call(Name, ID, Request) -> gen_server:call(Name, {call, ID, Request}).
+call(Name, ID, Request, Timeout) ->
+	gen_server:call(Name, {call, ID, Request}, Timeout).
+
 cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).
 
 reply(Client, Reply) -> gen_server:reply(Client, Reply).
