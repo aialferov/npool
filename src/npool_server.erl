@@ -48,8 +48,11 @@ init({Module, [{states, States}], SupPid}) ->
 handle_call({add, ID, WorkerState}, _From, State = {WorkerSupPid, Workers}) ->
 	case npool_workers:member(ID, Workers) of
 		true -> {reply, {error, already_started}, State};
-		false -> {reply, ok, {WorkerSupPid, npool_workers:insert(
-			start_worker(WorkerSupPid, {ID, WorkerState}), Workers)}}
+		false -> case start_worker(WorkerSupPid, {ID, WorkerState}) of
+			{ok, WorkerPid} -> {reply, ok, {WorkerSupPid,
+				npool_workers:insert({ID, WorkerPid}, Workers)}};
+			Error -> {reply, Error, State}
+		end
 	end;
 
 handle_call({remove, ID}, _From, State = {WorkerSupPid, Workers}) ->
@@ -113,11 +116,11 @@ start_workers(WorkerSupPid, States) -> {WorkerSupPid, npool_workers:init(
 	[start_worker(WorkerSupPid, worker_state(State)) || State <- States])}.
 
 start_worker(_WorkerSupPid, []) -> [];
-start_worker(WorkerSupPid, {ID, State}) ->
-	{ok, WorkerPid} = supervisor:start_child(WorkerSupPid,
-		[ID, State, worker_start_notify_fun(self(), ID)]),
-	monitor(process, WorkerPid),
-	{ID, WorkerPid}.
+start_worker(WorkerSupPid, {ID, State}) -> start_worker(supervisor:start_child(
+	WorkerSupPid, [ID, State, worker_start_notify_fun(self(), ID)])).
+
+start_worker(Ok = {ok, WorkerPid}) -> monitor(process, WorkerPid), Ok;
+start_worker(Error) -> Error.
 
 worker_state({static, {ID, State}}) -> {ID, State};
 worker_state({dynamic, {ID, {M, F}}}) -> case M:F() of
