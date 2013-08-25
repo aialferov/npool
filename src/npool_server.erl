@@ -10,7 +10,7 @@
 
 -export([start_link/2]).
 
--export([add/3, remove/2]).
+-export([add/3, add/4, remove/2, remove/3]).
 -export([workers/1]).
 
 -export([call/3, call/4, cast/3]).
@@ -28,7 +28,11 @@ start_link({module, Module}, SupPid) -> gen_server:start_link({local, Module},
 	?MODULE, {Module, utils_app:get_env([states]), SupPid}, []).
 
 add(Name, ID, State) -> gen_server:call(Name, {add, ID, State}).
+add(Name, ID, State, Timeout) -> gen_server:call(
+	Name, {add, ID, State}, Timeout).
+
 remove(Name, ID) -> gen_server:call(Name, {remove, ID}).
+remove(Name, ID, Timeout) -> gen_server:call(Name, {remove, ID}, Timeout).
 
 workers(Name) -> [Worker || Worker = {_ID, Pid}
 	<- gen_server:call(Name, workers), is_pid(Pid)].
