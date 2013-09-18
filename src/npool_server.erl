@@ -8,7 +8,7 @@
 -module(npool_server).
 -behaviour(gen_server).
 
--export([start_link/2]).
+-export([start_link/3]).
 
 -export([add/3, add/4, remove/2, remove/3]).
 -export([workers/1]).
@@ -19,13 +19,14 @@
 -export([init/1, terminate/2, code_change/3]).
 -export([handle_call/3, handle_cast/2, handle_info/2]).
 
--define(WorkerSpec(Module), {
-	Module, {npool_worker_sup, start_link, [Module]},
+-define(WorkerSupSpec(Module, WorkerSpec), {
+	Module, {npool_worker_sup, start_link, [Module, WorkerSpec]},
 	permanent, infinity, supervisor, [npool_worker_sup]
 }).
 
-start_link({module, Module}, SupPid) -> gen_server:start_link({local, Module},
-	?MODULE, {Module, utils_app:get_env([states]), SupPid}, []).
+start_link({module, Module}, {worker_spec, WorkerSpec}, SupPid) ->
+	gen_server:start_link({local, Module}, ?MODULE,
+		{Module, WorkerSpec, utils_app:get_env([states]), SupPid}, []).
 
 add(Name, ID, State) -> gen_server:call(Name, {add, ID, State}).
 add(Name, ID, State, Timeout) -> gen_server:call(
@@ -45,9 +46,10 @@ cast(Name, ID, Request) -> gen_server:call(Name, {cast, ID, Request}).
 
 reply(Client, Reply) -> gen_server:reply(Client, Reply).
 
-init({Module, [], SupPid}) -> init({Module, [{states, []}], SupPid});
-init({Module, [{states, States}], SupPid}) ->
-	{gen_server:cast(Module, {start_workers, Module, States, SupPid}), []}.
+init({Module, WorkerSpec, [], SupPid}) ->
+	init({Module, WorkerSpec, [{states, []}], SupPid});
+init({Module, WorkerSpec, [{states, States}], SupPid}) -> {gen_server:cast(
+	Module, {start_workers, Module, WorkerSpec, States, SupPid}), []}.
 
 handle_call({add, ID, WorkerState}, _From, State = {WorkerSupPid, Workers}) ->
 	case npool_workers:member(ID, Workers) of
@@ -84,8 +86,9 @@ handle_call({cast, ID, Request}, _From, State = {_WorkerSupPid, Workers}) ->
 		Error -> Error
 	end, State}.
 
-handle_cast({start_workers, Module, States, SupPid}, []) ->
-	{noreply, start_workers(start_worker_sup(Module, SupPid), States)};
+handle_cast({start_workers, Module, WorkerSpec, States, SupPid}, []) ->
+	{noreply, start_workers(start_worker_sup(
+		Module, WorkerSpec, SupPid), States)};
 
 handle_cast({worker_started, ID, WorkerPid}, {WorkerSupPid, Workers}) ->
 	{noreply, {WorkerSupPid, case npool_workers:member(ID, Workers) of
@@ -110,8 +113,8 @@ worker_pid({_ID, WorkerPid}) -> case is_process_alive(WorkerPid) of
 	true -> {ok, WorkerPid}; false -> {error, internal} end;
 worker_pid(false) -> {error, not_found}.
 
-start_worker_sup(Module, SupPid) ->
-	case supervisor:start_child(SupPid, ?WorkerSpec(Module)) of
+start_worker_sup(Module, WorkerSpec, SupPid) ->
+	case supervisor:start_child(SupPid, ?WorkerSupSpec(Module, WorkerSpec)) of
 		{ok, WorkerSupPid} -> WorkerSupPid;
 		{error, {already_started, WorkerSupPid}} -> WorkerSupPid
 	end.

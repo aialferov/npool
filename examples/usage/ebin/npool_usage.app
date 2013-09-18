@@ -9,5 +9,8 @@
 	{modules, [npool_usage, npool_usage_server]},
 	{registered, [npool_usage_server]},
 	{applications, [kernel, stdlib, sasl, npool]},
-	{mod, {npool_app, [{module, npool_usage_server}]}}
+	{mod, {npool_app, [
+		{module, npool_usage_server},
+		{worker_spec, {1, 1, temporary, infinity}}
+	]}}
 ]}.
